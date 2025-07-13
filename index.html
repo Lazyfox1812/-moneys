@@ -1,78 +1,92 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-<meta charset="UTF-8">
-<title>แปลงค่าเงินต่างประเทศเป็นเงินบาท</title>
-<style>
-  body {
-    font-family: Arial, sans-serif;
-    background-color: #f7f7f7;
-    text-align: center;
-    padding: 50px;
-  }
-  h1 {
-    font-size: 1.5em;
-  }
-  .converter {
-    display: inline-block;
-    background: white;
-    padding: 20px;
-    border-radius: 5px;
-  }
-  input, select {
-    width: 300px;
-    padding: 10px;
-    margin: 10px 0;
-  }
-  button {
-    background-color: #4CAF50; /* สีเขียว */
-    color: white;
-    border: none;
-    padding: 12px 20px;
-    font-size: 1em;
-    cursor: pointer;
-  }
-  button:hover {
-    background-color: #45a049;
-  }
-  .result {
-    margin-top: 20px;
-    font-size: 1.2em;
-    color: #004d40;
-  }
-</style>
+  <meta charset="UTF-8" />
+  <title>แปลงค่าเงินต่างประเทศเป็นเงินบาท</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f9f9f9;
+      text-align: center;
+      padding-top: 50px;
+    }
+    input, select, button {
+      padding: 8px;
+      margin: 5px;
+      font-size: 16px;
+    }
+    #resultDiv {
+      margin-top: 20px;
+      font-weight: bold;
+      color: #333;
+    }
+  </style>
 </head>
 <body>
-
-<h1>แปลงค่าเงินต่างประเทศเป็นเงินบาท</h1>
-
-<div class="converter">
+  <h2>แปลงค่าเงินต่างประเทศเป็นเงินบาท</h2>
   <div>
-    <label>จำนวนเงิน (สกุลต่างประเทศ):</label><br>
-    <input type="number" id="amount" placeholder="เช่น 1000">
-  </div>
-  <div>
-    <label>เลือกสกุลเงิน:</label><br>
+    <input type="number" id="amount" placeholder="จำนวนเงิน">
     <select id="currency">
-      <option value="VND">ดองเวียดนาม (VND)</option>
-      <option value="LAK">กีบลาว (LAK)</option>
-      <!-- เพิ่มสกุลเงินอื่นตามต้องการ -->
+      <option value="IDR">รูเปียห์อินโดนีเซีย (IDR)</option>
+      <option value="USD">ดอลลาร์สหรัฐ (USD)</option>
+      <option value="EUR">ยูโร (EUR)</option>
+      <!-- เพิ่มสกุลอื่นได้ตามต้องการ -->
     </select>
+    <button onclick="convert()">แปลงค่าเงิน</button>
   </div>
-  <button onclick="convert()">แปลงค่าเงิน</button>
-  <div class="result" id="resultDiv"></div>
-</div>
+  <div id="resultDiv"></div>
 
-<script>
-async function convert() {
-  const amount = parseFloat(document.getElementById('amount').value);
-  const currency = document.getElementById('currency').value;
-  const resultDiv = document.getElementById('resultDiv');
-  
-  if (isNaN(amount) || amount <= 0) {
-    resultDiv.textContent = 'กรุณากรอกจำนวนเงินที่ถูกต้อง';
-    return;
-  }
+  <script>
+    async function convert() {
+      const amount = parseFloat(document.getElementById('amount').value);
+      const currency = document.getElementById('currency').value;
+      const resultDiv = document.getElementById('resultDiv');
 
-  try {
-    const response = await fetch('https://api.exchangerate-api.com/
+      if (isNaN(amount) || amount <= 0) {
+        resultDiv.textContent = 'กรุณากรอกจำนวนเงินที่ถูกต้อง';
+        return;
+      }
+
+      resultDiv.textContent = 'กำลังแปลงค่าเงิน...';
+
+      try {
+        // ดึงอัตราแลกเปลี่ยนจากสกุลเงินที่เลือก
+        const response = await fetch(`https://api.exchangerate-api.com/v4/latest/${currency}`);
+        const data = await response.json();
+        console.log('Base currency data:', data);
+
+        let rateTHB = data.rates?.THB;
+
+        // ถ้าไม่มีอัตรา THB ให้ใช้ USD เป็นตัวกลาง
+        if (!rateTHB) {
+          const rateToUSD = data.rates?.USD;
+          console.log(`อัตรา ${currency} → USD: `, rateToUSD);
+
+          if (rateToUSD) {
+            const usdResponse = await fetch(`https://api.exchangerate-api.com/v4/latest/USD`);
+            const usdData = await usdResponse.json();
+            console.log('USD base data:', usdData);
+
+            const usdToTHB = usdData.rates?.THB;
+            console.log('USD → THB:', usdToTHB);
+
+            if (usdToTHB) {
+              rateTHB = rateToUSD * usdToTHB;
+            }
+          }
+        }
+
+        if (rateTHB) {
+          const converted = amount * rateTHB;
+          resultDiv.textContent = `${amount.toLocaleString()} ${currency} = ${converted.toFixed(2)} บาท`;
+        } else {
+          resultDiv.textContent = '❌ ไม่พบอัตราแลกเปลี่ยน (THB)';
+        }
+      } catch (error) {
+        console.error('เกิดข้อผิดพลาด:', error);
+        resultDiv.textContent = 'เกิดข้อผิดพลาดในการดึงข้อมูล';
+      }
+    }
+  </script>
+</body>
+</html>

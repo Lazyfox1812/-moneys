@@ -27,7 +27,7 @@
 </head>
 <body>
 
-  <h1>แปลงเงินต่างประเทศเป็นเงินบาท</h1>
+  <h1>แปลงเงินต่างประเทศเป็นเงินบาท (Real-time)</h1>
 
   <input type="number" id="amount" placeholder="จำนวนเงินต่างประเทศ" />
 
@@ -55,13 +55,14 @@
       }
 
       try {
-        const response = await fetch(`https://api.exchangerate.host/latest?base=${currency}&symbols=THB`);
+        // Frankfurter API รองรับ USD, SGD, MYR, VND, PHP, IDR
+        const response = await fetch(`https://api.frankfurter.app/latest?from=${currency}&to=THB`);
         const data = await response.json();
         const rate = data.rates.THB;
         const result = amount * rate;
 
         document.getElementById("result").innerText = 
-          `${amount.toLocaleString()} ${currency} = ${result.toFixed(2).toLocaleString()} บาท`;
+          `${amount.toLocaleString()} ${currency} = ${result.toFixed(2).toLocaleString()} บาท (อัตราแลกเปลี่ยน: ${rate})`;
       } catch (error) {
         document.getElementById("result").innerText = "เกิดข้อผิดพลาดในการดึงอัตราแลกเปลี่ยน";
         console.error(error);
